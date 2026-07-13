@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>On3 College Football TV Ratings Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #E91518;
+    --secondary: #FFFFFF;
+    --bg: #0E0E10;
+    --surface: #19191C;
+    --surface-2: #212124;
+    --border: #2E2E32;
+    --text: #F4F4F5;
+    --text-dim: #A2A2A8;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+  [data-theme="light"] {
+    --bg: #F5F5F6;
+    --surface: #FFFFFF;
+    --surface-2: #F0F0F1;
+    --border: #E1E1E3;
+    --text: #17171A;
+    --text-dim: #6B6B72;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header.page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 16px;
+  }
+  .title-block .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--primary); margin: 0 0 4px;
+  }
+  h1 {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(26px, 5vw, 38px); line-height: 1.02; margin: 0; letter-spacing: -0.01em;
+  }
+  .theme-toggle {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--primary); }
+
+  .add-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 22px;
+  }
+  .add-panel h2 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .add-panel .hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin: 0 0 10px;
+  }
+  .add-panel .hint code {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 11.5px;
+  }
+  #bulkInput {
+    width: 100%;
+    min-height: 110px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 7px;
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    resize: vertical;
+    margin-bottom: 10px;
+  }
+  .add-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .btn {
+    border: none;
+    border-radius: 7px;
+    padding: 9px 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+  .save-status { font-size: 12px; color: var(--text-dim); }
+  .parse-errors {
+    font-size: 12px;
+    color: var(--primary);
+    margin-top: 6px;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  @media (min-width: 640px) { .controls { flex-wrap: nowrap; } }
+  .search-box { flex: 1 1 120px; max-width: 170px; position: relative; }
+  .search-box input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 8px 6px 26px; border-radius: 8px; font-size: 12px;
+  }
+  .search-box::before {
+    content: ""; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px;
+    transform: translateY(-50%); border: 2px solid var(--text-dim); border-radius: 50%; pointer-events: none;
+  }
+  .search-box::after {
+    content: ""; position: absolute; left: 16px; top: 60%; width: 5px; height: 2px;
+    background: var(--text-dim); transform: rotate(45deg); pointer-events: none;
+  }
+  select {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 7px; border-radius: 8px; font-size: 11px; cursor: pointer;
+  }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  thead th {
+    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-dim); padding: 12px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  thead th:hover { color: var(--primary); }
+  thead th .arrow { margin-left: 4px; opacity: 0.5; font-size: 10px; }
+  thead th.active .arrow { opacity: 1; color: var(--primary); }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+  td.col-viewers { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--primary); white-space: nowrap; }
+  td.col-game { font-weight: 600; }
+  .net-badge {
+    display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.03em; border: 1px solid var(--nc, var(--border)); color: var(--nc, var(--text));
+    background: color-mix(in srgb, var(--nc, var(--text-dim)) 12%, transparent); white-space: nowrap; margin: 2px 4px 2px 0;
+  }
+  .row-new { animation: flashIn 1.6s ease; }
+  @keyframes flashIn {
+    0% { background: color-mix(in srgb, var(--primary) 25%, transparent); }
+    100% { background: transparent; }
+  }
+  .remove-btn {
+    background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px;
+  }
+  .remove-btn:hover { color: var(--primary); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 14px; display: none; }
+  footer.page-foot { margin-top: 22px; text-align: center; font-size: 12px; color: var(--text-dim); letter-spacing: 0.02em; }
+
+  .card-list { display: none; }
+  @media (max-width: 720px) {
+    table { display: none; }
+    .card-list { display: block; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 14px 12px; margin-bottom: 10px; width: 100%; max-width: 100%; }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .card-game { font-weight: 600; font-size: 14.5px; line-height: 1.3; }
+    .card-viewers { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--primary); white-space: nowrap; flex-shrink: 0; text-align: right; }
+    .card-viewers small { display: block; font-family: var(--font-body); font-size: 9px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase; }
+    .card-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 9px; }
+    .card-bottom .dot { opacity: 0.5; }
+    .card-remove { margin-left: auto; }
+  }
+</style>
+</head>
+<body data-theme="dark">
+<div class="wrap">
+
+  <header class="page-head">
+    <div class="title-block">
+      <p class="eyebrow">2025 Season &middot; Live Tracker</p>
+      <h1>On3 College Football<br>TV Ratings Tracker</h1>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-pressed="true">
+      <span id="themeIcon">&#9789;</span> <span id="themeLabel">Dark</span>
+    </button>
+  </header>
+
+  <div class="add-panel">
+    <h2>Add this week's games</h2>
+    <p class="hint">
+      Column order: <code>Viewers | Game | Date/Time | Network | Week | Phase</code><br>
+      Pasting straight from Google Sheets works too — just select and copy the row range, then paste here; tabs between columns are detected automatically. Or type rows manually using <code>|</code> to separate fields.<br>
+      Example: <code>7.842 | Alabama at South Carolina | Oct. 25, 3:30 p.m. ET | ABC | Week 9 | Regular Season</code>
+    </p>
+    <textarea id="bulkInput" placeholder="7.842 | Alabama at South Carolina | Oct. 25, 3:30 p.m. ET | ABC | Week 9 | Regular Season
+6.7598 | Texas A&M at LSU | Oct. 25, 7:30 p.m. ET | ABC | Week 9 | Regular Season"></textarea>
+    <div class="add-actions">
+      <button class="btn btn-primary" id="addBtn">Add Games</button>
+      <button class="btn btn-ghost" id="clearBtn">Clear All Data</button>
+      <span class="save-status" id="saveStatus"></span>
+    </div>
+    <div class="parse-errors" id="parseErrors"></div>
+  </div>
+
+  <div class="controls">
+    <div class="search-box"><input type="text" id="searchInput" placeholder="Search by team..."></div>
+    <select id="weekFilter" aria-label="Filter by week"><option value="all">All Weeks</option></select>
+    <select id="networkFilter" aria-label="Filter by network"><option value="all">All Networks</option></select>
+    <select id="phaseFilter" aria-label="Filter by phase"><option value="all">All Phases</option></select>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th data-sort="viewers" data-type="num">Viewers <span class="arrow">&#9660;</span></th>
+        <th data-sort="game" data-type="str">Game <span class="arrow">&#9660;</span></th>
+        <th data-sort="datetime" data-type="str">Date / Time <span class="arrow">&#9660;</span></th>
+        <th data-sort="network" data-type="str">Network <span class="arrow">&#9660;</span></th>
+        <th data-sort="week" data-type="str">Week <span class="arrow">&#9660;</span></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div class="card-list" id="cardList"></div>
+  <div class="empty-state" id="emptyState">No games yet — paste your first week above.</div>
+
+  <footer class="page-foot">Source: Nielsen Big Data + Panel</footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'on3_ratings_tracker_games';
+const WEEK_ORDER = ['Week 1','Week 2','Week 3','Week 4','Week 5','Week 6','Week 7','Week 8','Week 9','Week 10','Week 11','Week 12','Week 13','Week 14','Week 15','Week 16','Week 17','Conference Championships','Army-Navy','Bowl Games','College Football Playoff'];
+
+const NETWORK_COLORS = {
+  "ABC": "#5E9CFF", "ESPN": "#E91518", "ESPN2": "#FF7A59", "ESPNU": "#FFB84D",
+  "FOX": "#3B6EF6", "FS1": "#1A4FD1", "NBC": "#B15CFF", "CBS": "#4DA6FF",
+  "BTN": "#8A8AFF", "TNT": "#FFC94D", "The CW": "#3FD1A6", "TBS": "#FF8FA3", "truTV": "#5FD68A"
+};
+
+let DATA = [];
+let sortState = { key: "viewers", dir: "desc" };
+let filters = { search: "", week: "all", network: "all", phase: "all" };
+let lastAddedIds = new Set();
+
+async function loadData() {
+  try {
+    const result = await window.storage.get(STORAGE_KEY, false);
+    DATA = result ? JSON.parse(result.value) : [];
+  } catch (e) {
+    DATA = [];
+  }
+  refreshFilterOptions();
+  render();
+}
+
+async function saveData() {
+  const statusEl = document.getElementById('saveStatus');
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(DATA), false);
+    statusEl.textContent = 'Saved';
+    setTimeout(() => { if (statusEl.textContent === 'Saved') statusEl.textContent = ''; }, 2000);
+  } catch (e) {
+    statusEl.textContent = 'Save failed — try again';
+  }
+}
+
+function refreshFilterOptions() {
+  const weekSel = document.getElementById('weekFilter');
+  const netSel = document.getElementById('networkFilter');
+  const phaseSel = document.getElementById('phaseFilter');
+  const prevWeek = weekSel.value, prevNet = netSel.value, prevPhase = phaseSel.value;
+  weekSel.innerHTML = '<option value="all">All Weeks</option>';
+  netSel.innerHTML = '<option value="all">All Networks</option>';
+  phaseSel.innerHTML = '<option value="all">All Phases</option>';
+
+  const weeksPresent = new Set(DATA.map(d => d.week));
+  const orderedWeeks = WEEK_ORDER.filter(w => weeksPresent.has(w));
+  [...weeksPresent].filter(w => !WEEK_ORDER.includes(w)).sort().forEach(w => orderedWeeks.push(w));
+  orderedWeeks.forEach(w => {
+    const opt = document.createElement('option'); opt.value = w; opt.textContent = w; weekSel.appendChild(opt);
+  });
+
+  const allNets = new Set();
+  DATA.forEach(d => d.network.split('/').forEach(n => allNets.add(n)));
+  [...allNets].sort().forEach(n => {
+    const opt = document.createElement('option'); opt.value = n; opt.textContent = n; netSel.appendChild(opt);
+  });
+
+  [...new Set(DATA.map(d => d.phase))].sort().forEach(p => {
+    const opt = document.createElement('option'); opt.value = p; opt.textContent = p; phaseSel.appendChild(opt);
+  });
+
+  weekSel.value = [...weekSel.options].some(o => o.value === prevWeek) ? prevWeek : 'all';
+  netSel.value = [...netSel.options].some(o => o.value === prevNet) ? prevNet : 'all';
+  phaseSel.value = [...phaseSel.options].some(o => o.value === prevPhase) ? prevPhase : 'all';
+}
+
+function getFiltered() {
+  return DATA.filter(d => {
+    const matchesSearch = d.game.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesWeek = filters.week === 'all' || d.week === filters.week;
+    const matchesNetwork = filters.network === 'all' || d.network.split('/').includes(filters.network);
+    const matchesPhase = filters.phase === 'all' || d.phase === filters.phase;
+    return matchesSearch && matchesWeek && matchesNetwork && matchesPhase;
+  });
+}
+
+function getSorted(rows) {
+  const { key, dir } = sortState;
+  return [...rows].sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    if (av < bv) return dir === 'asc' ? -1 : 1;
+    if (av > bv) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+function netBadge(network) {
+  return network.split('/').map(n => {
+    const color = NETWORK_COLORS[n] || '#A2A2A8';
+    return `<span class="net-badge" style="--nc:${color}">${n}</span>`;
+  }).join(' ');
+}
+
+function render() {
+  const rows = getSorted(getFiltered());
+  const tbody = document.getElementById('tableBody');
+  const cardList = document.getElementById('cardList');
+  const emptyState = document.getElementById('emptyState');
+  emptyState.style.display = rows.length ? 'none' : 'block';
+
+  tbody.innerHTML = rows.map(d => `
+    <tr class="${lastAddedIds.has(d.id) ? 'row-new' : ''}">
+      <td class="col-viewers">${d.viewers} M</td>
+      <td class="col-game">${d.game}</td>
+      <td>${d.datetime}</td>
+      <td>${netBadge(d.network)}</td>
+      <td>${d.week}</td>
+      <td><button class="remove-btn" data-id="${d.id}" title="Remove">&times;</button></td>
+    </tr>
+  `).join('');
+
+  cardList.innerHTML = rows.map(d => `
+    <div class="card ${lastAddedIds.has(d.id) ? 'row-new' : ''}">
+      <div class="card-top">
+        <div class="card-game">${d.game}</div>
+        <div class="card-viewers"><small>Viewers</small>${d.viewers} M</div>
+      </div>
+      <div class="card-bottom">
+        <span>${d.datetime}</span>
+        <span class="dot">&bull;</span>
+        <span>${d.week}</span>
+        <span class="dot">&bull;</span>
+        <span>${netBadge(d.network)}</span>
+        <button class="remove-btn card-remove" data-id="${d.id}" title="Remove">&times;</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => removeGame(btn.dataset.id));
+  });
+
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.classList.toggle('active', th.dataset.sort === sortState.key);
+    const arrow = th.querySelector('.arrow');
+    if (!arrow) return;
+    if (th.dataset.sort === sortState.key) {
+      arrow.innerHTML = sortState.dir === 'asc' ? '&#9650;' : '&#9660;';
+    } else {
+      arrow.innerHTML = '&#9660;';
+    }
+  });
+}
+
+async function removeGame(id) {
+  DATA = DATA.filter(d => d.id !== id);
+  refreshFilterOptions();
+  render();
+  await saveData();
+}
+
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.tabIndex = 0;
+  const handler = () => {
+    const key = th.dataset.sort;
+    if (sortState.key === key) {
+      sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState = { key, dir: th.dataset.type === 'num' ? 'desc' : 'asc' };
+    }
+    render();
+  };
+  th.addEventListener('click', handler);
+  th.addEventListener('keypress', e => { if (e.key === 'Enter') handler(); });
+});
+
+document.getElementById('searchInput').addEventListener('input', e => { filters.search = e.target.value; render(); });
+document.getElementById('weekFilter').addEventListener('change', e => { filters.week = e.target.value; render(); });
+document.getElementById('networkFilter').addEventListener('change', e => { filters.network = e.target.value; render(); });
+document.getElementById('phaseFilter').addEventListener('change', e => { filters.phase = e.target.value; render(); });
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const raw = document.getElementById('bulkInput').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const errorsEl = document.getElementById('parseErrors');
+  const errors = [];
+  const newRows = [];
+
+  lines.forEach((line, i) => {
+    const parts = (line.includes('\t') ? line.split('\t') : line.split('|')).map(p => p.trim());
+    if (parts.length < 4) {
+      errors.push(`Line ${i + 1}: needs at least Viewers | Game | Date/Time | Network — skipped`);
+      return;
+    }
+    const viewers = parseFloat(parts[0]);
+    const game = parts[1];
+    const datetime = parts[2] || '—';
+    const network = parts[3] || 'TBD';
+    const week = parts[4] || 'Unscheduled';
+    const phase = parts[5] || 'Regular Season';
+
+    if (isNaN(viewers) || !game) {
+      errors.push(`Line ${i + 1}: couldn't read viewers or game name — skipped`);
+      return;
+    }
+    newRows.push({
+      id: 'g_' + Date.now() + '_' + i,
+      viewers, game, datetime, network, week, phase
+    });
+  });
+
+  if (errors.length) {
+    errorsEl.style.display = 'block';
+    errorsEl.innerHTML = errors.join('<br>');
+  } else {
+    errorsEl.style.display = 'none';
+  }
+
+  if (newRows.length) {
+    DATA = DATA.concat(newRows);
+    lastAddedIds = new Set(newRows.map(r => r.id));
+    refreshFilterOptions();
+    render();
+    await saveData();
+    document.getElementById('bulkInput').value = '';
+  }
+});
+
+document.getElementById('clearBtn').addEventListener('click', async () => {
+  if (!confirm('Remove all games from this tracker? This cannot be undone.')) return;
+  DATA = [];
+  lastAddedIds = new Set();
+  refreshFilterOptions();
+  render();
+  await saveData();
+});
+
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const themeLabel = document.getElementById('themeLabel');
+themeToggle.addEventListener('click', () => {
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  themeIcon.innerHTML = isDark ? '&#9728;' : '&#9789;';
+  themeLabel.textContent = isDark ? 'Light' : 'Dark';
+});
+
+loadData();
+</script>
+</body>
+</html>
