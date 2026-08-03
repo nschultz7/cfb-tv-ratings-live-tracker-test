@@ -62,73 +62,19 @@
   }
   .theme-toggle:hover { border-color: var(--primary); }
 
-  .add-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 22px;
-  }
-  .add-panel h2 {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
-    margin: 0 0 6px;
-  }
-  .add-panel .hint {
+  .status-banner {
     font-size: 12px;
     color: var(--text-dim);
-    line-height: 1.5;
-    margin: 0 0 10px;
-  }
-  .add-panel .hint code {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 5px;
-    font-size: 11.5px;
-  }
-  #bulkInput {
-    width: 100%;
-    min-height: 110px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 10px 12px;
-    border-radius: 7px;
-    font-family: 'Courier New', monospace;
-    font-size: 12.5px;
-    line-height: 1.6;
-    resize: vertical;
-    margin-bottom: 10px;
-  }
-  .add-actions {
+    margin-bottom: 14px;
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
     align-items: center;
+    gap: 6px;
   }
-  .btn {
-    border: none;
-    border-radius: 7px;
-    padding: 9px 16px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
+  .status-banner.error { color: var(--primary); }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #3FD68A; flex-shrink: 0;
   }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { filter: brightness(1.08); }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
-  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
-  .save-status { font-size: 12px; color: var(--text-dim); }
-  .parse-errors {
-    font-size: 12px;
-    color: var(--primary);
-    margin-top: 6px;
-    line-height: 1.5;
-    display: none;
-  }
+  .status-banner.error .status-dot { background: var(--primary); }
 
   .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   @media (min-width: 640px) { .controls { flex-wrap: nowrap; } }
@@ -169,15 +115,6 @@
     letter-spacing: 0.03em; border: 1px solid var(--nc, var(--border)); color: var(--nc, var(--text));
     background: color-mix(in srgb, var(--nc, var(--text-dim)) 12%, transparent); white-space: nowrap; margin: 2px 4px 2px 0;
   }
-  .row-new { animation: flashIn 1.6s ease; }
-  @keyframes flashIn {
-    0% { background: color-mix(in srgb, var(--primary) 25%, transparent); }
-    100% { background: transparent; }
-  }
-  .remove-btn {
-    background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px;
-  }
-  .remove-btn:hover { color: var(--primary); }
 
   .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 14px; display: none; }
   footer.page-foot { margin-top: 22px; text-align: center; font-size: 12px; color: var(--text-dim); letter-spacing: 0.02em; }
@@ -193,7 +130,6 @@
     .card-viewers small { display: block; font-family: var(--font-body); font-size: 9px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase; }
     .card-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 9px; }
     .card-bottom .dot { opacity: 0.5; }
-    .card-remove { margin-left: auto; }
   }
 </style>
 </head>
@@ -210,21 +146,8 @@
     </button>
   </header>
 
-  <div class="add-panel">
-    <h2>Add this week's games</h2>
-    <p class="hint">
-      Column order: <code>Viewers | Game | Date/Time | Network | Week | Phase</code><br>
-      Pasting straight from Google Sheets works too — just select and copy the row range, then paste here; tabs between columns are detected automatically. Or type rows manually using <code>|</code> to separate fields.<br>
-      Example: <code>7.842 | Alabama at South Carolina | Oct. 25, 3:30 p.m. ET | ABC | Week 9 | Regular Season</code>
-    </p>
-    <textarea id="bulkInput" placeholder="7.842 | Alabama at South Carolina | Oct. 25, 3:30 p.m. ET | ABC | Week 9 | Regular Season
-6.7598 | Texas A&M at LSU | Oct. 25, 7:30 p.m. ET | ABC | Week 9 | Regular Season"></textarea>
-    <div class="add-actions">
-      <button class="btn btn-primary" id="addBtn">Add Games</button>
-      <button class="btn btn-ghost" id="clearBtn">Clear All Data</button>
-      <span class="save-status" id="saveStatus"></span>
-    </div>
-    <div class="parse-errors" id="parseErrors"></div>
+  <div class="status-banner" id="statusBanner">
+    <span class="status-dot"></span> <span id="statusText">Loading latest data&hellip;</span>
   </div>
 
   <div class="controls">
@@ -242,20 +165,30 @@
         <th data-sort="datetime" data-type="str">Date / Time <span class="arrow">&#9660;</span></th>
         <th data-sort="network" data-type="str">Network <span class="arrow">&#9660;</span></th>
         <th data-sort="week" data-type="str">Week <span class="arrow">&#9660;</span></th>
-        <th></th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 
   <div class="card-list" id="cardList"></div>
-  <div class="empty-state" id="emptyState">No games yet — paste your first week above.</div>
+  <div class="empty-state" id="emptyState">No games match your filters.</div>
 
   <footer class="page-foot">Source: Nielsen Big Data + Panel</footer>
 </div>
 
 <script>
-const STORAGE_KEY = 'on3_ratings_tracker_games';
+/* ============================================================
+   CONFIG — paste your published Google Sheet CSV link here.
+   How to get it:
+   1. In Google Sheets: File > Share > Publish to web
+   2. Choose the specific sheet/tab, format: Comma-separated values (.csv)
+   3. Click Publish, copy the link it gives you, paste below.
+   Your sheet's header row (first row) must read exactly:
+   Viewers,Game,Date/Time,Network,Week,Phase
+   ============================================================ */
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRv4T6Ec34Y1Zr1SUJKptiTq7MkgyUzlxc36KoKrt1XP7pXiCeRg_2Sy7oGeNgFROcrieMlVmZkD62/pub?gid=0&single=true&output=csv";
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // re-check every 5 minutes
+
 const WEEK_ORDER = ['Week 1','Week 2','Week 3','Week 4','Week 5','Week 6','Week 7','Week 8','Week 9','Week 10','Week 11','Week 12','Week 13','Week 14','Week 15','Week 16','Week 17','Conference Championships','Army-Navy','Bowl Games','College Football Playoff'];
 
 const NETWORK_COLORS = {
@@ -267,28 +200,68 @@ const NETWORK_COLORS = {
 let DATA = [];
 let sortState = { key: "viewers", dir: "desc" };
 let filters = { search: "", week: "all", network: "all", phase: "all" };
-let lastAddedIds = new Set();
+
+// Minimal CSV parser that handles quoted fields (Google's export quotes any field containing a comma)
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], next = text[i + 1];
+    if (inQuotes) {
+      if (c === '"' && next === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += c; }
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0] !== ''));
+}
 
 async function loadData() {
+  const statusBanner = document.getElementById('statusBanner');
+  const statusText = document.getElementById('statusText');
   try {
-    const result = await window.storage.get(STORAGE_KEY, false);
-    DATA = result ? JSON.parse(result.value) : [];
+    if (!SHEET_CSV_URL || SHEET_CSV_URL.indexOf('PASTE_YOUR') === 0) {
+      throw new Error('Sheet link not configured yet');
+    }
+    const res = await fetch(SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const idx = {
+      viewers: header.indexOf('viewers'),
+      game: header.indexOf('game'),
+      datetime: header.indexOf('date/time'),
+      network: header.indexOf('network'),
+      week: header.indexOf('week'),
+      phase: header.indexOf('phase')
+    };
+    DATA = rows.slice(1)
+      .filter(r => r[idx.game] && r[idx.game].trim())
+      .map(r => ({
+        viewers: parseFloat(r[idx.viewers]) || 0,
+        game: (r[idx.game] || '').trim(),
+        datetime: (r[idx.datetime] || '').trim(),
+        network: (r[idx.network] || '').trim(),
+        week: (r[idx.week] || '').trim(),
+        phase: (r[idx.phase] || '').trim()
+      }));
+
+    statusBanner.classList.remove('error');
+    statusText.textContent = 'Live — synced ' + new Date().toLocaleTimeString();
   } catch (e) {
-    DATA = [];
+    statusBanner.classList.add('error');
+    statusText.textContent = 'Could not load live data (' + e.message + ') — check SHEET_CSV_URL in the page source';
   }
   refreshFilterOptions();
   render();
-}
-
-async function saveData() {
-  const statusEl = document.getElementById('saveStatus');
-  try {
-    await window.storage.set(STORAGE_KEY, JSON.stringify(DATA), false);
-    statusEl.textContent = 'Saved';
-    setTimeout(() => { if (statusEl.textContent === 'Saved') statusEl.textContent = ''; }, 2000);
-  } catch (e) {
-    statusEl.textContent = 'Save failed — try again';
-  }
 }
 
 function refreshFilterOptions() {
@@ -308,12 +281,12 @@ function refreshFilterOptions() {
   });
 
   const allNets = new Set();
-  DATA.forEach(d => d.network.split('/').forEach(n => allNets.add(n)));
-  [...allNets].sort().forEach(n => {
+  DATA.forEach(d => d.network.split('/').forEach(n => allNets.add(n.trim())));
+  [...allNets].filter(Boolean).sort().forEach(n => {
     const opt = document.createElement('option'); opt.value = n; opt.textContent = n; netSel.appendChild(opt);
   });
 
-  [...new Set(DATA.map(d => d.phase))].sort().forEach(p => {
+  [...new Set(DATA.map(d => d.phase))].filter(Boolean).sort().forEach(p => {
     const opt = document.createElement('option'); opt.value = p; opt.textContent = p; phaseSel.appendChild(opt);
   });
 
@@ -326,7 +299,7 @@ function getFiltered() {
   return DATA.filter(d => {
     const matchesSearch = d.game.toLowerCase().includes(filters.search.toLowerCase());
     const matchesWeek = filters.week === 'all' || d.week === filters.week;
-    const matchesNetwork = filters.network === 'all' || d.network.split('/').includes(filters.network);
+    const matchesNetwork = filters.network === 'all' || d.network.split('/').map(n => n.trim()).includes(filters.network);
     const matchesPhase = filters.phase === 'all' || d.phase === filters.phase;
     return matchesSearch && matchesWeek && matchesNetwork && matchesPhase;
   });
@@ -345,6 +318,7 @@ function getSorted(rows) {
 
 function netBadge(network) {
   return network.split('/').map(n => {
+    n = n.trim();
     const color = NETWORK_COLORS[n] || '#A2A2A8';
     return `<span class="net-badge" style="--nc:${color}">${n}</span>`;
   }).join(' ');
@@ -358,18 +332,17 @@ function render() {
   emptyState.style.display = rows.length ? 'none' : 'block';
 
   tbody.innerHTML = rows.map(d => `
-    <tr class="${lastAddedIds.has(d.id) ? 'row-new' : ''}">
+    <tr>
       <td class="col-viewers">${d.viewers} M</td>
       <td class="col-game">${d.game}</td>
       <td>${d.datetime}</td>
       <td>${netBadge(d.network)}</td>
       <td>${d.week}</td>
-      <td><button class="remove-btn" data-id="${d.id}" title="Remove">&times;</button></td>
     </tr>
   `).join('');
 
   cardList.innerHTML = rows.map(d => `
-    <div class="card ${lastAddedIds.has(d.id) ? 'row-new' : ''}">
+    <div class="card">
       <div class="card-top">
         <div class="card-game">${d.game}</div>
         <div class="card-viewers"><small>Viewers</small>${d.viewers} M</div>
@@ -380,14 +353,9 @@ function render() {
         <span>${d.week}</span>
         <span class="dot">&bull;</span>
         <span>${netBadge(d.network)}</span>
-        <button class="remove-btn card-remove" data-id="${d.id}" title="Remove">&times;</button>
       </div>
     </div>
   `).join('');
-
-  document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => removeGame(btn.dataset.id));
-  });
 
   document.querySelectorAll('th[data-sort]').forEach(th => {
     th.classList.toggle('active', th.dataset.sort === sortState.key);
@@ -399,13 +367,6 @@ function render() {
       arrow.innerHTML = '&#9660;';
     }
   });
-}
-
-async function removeGame(id) {
-  DATA = DATA.filter(d => d.id !== id);
-  refreshFilterOptions();
-  render();
-  await saveData();
 }
 
 document.querySelectorAll('th[data-sort]').forEach(th => {
@@ -428,62 +389,6 @@ document.getElementById('weekFilter').addEventListener('change', e => { filters.
 document.getElementById('networkFilter').addEventListener('change', e => { filters.network = e.target.value; render(); });
 document.getElementById('phaseFilter').addEventListener('change', e => { filters.phase = e.target.value; render(); });
 
-document.getElementById('addBtn').addEventListener('click', async () => {
-  const raw = document.getElementById('bulkInput').value;
-  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const errorsEl = document.getElementById('parseErrors');
-  const errors = [];
-  const newRows = [];
-
-  lines.forEach((line, i) => {
-    const parts = (line.includes('\t') ? line.split('\t') : line.split('|')).map(p => p.trim());
-    if (parts.length < 4) {
-      errors.push(`Line ${i + 1}: needs at least Viewers | Game | Date/Time | Network — skipped`);
-      return;
-    }
-    const viewers = parseFloat(parts[0]);
-    const game = parts[1];
-    const datetime = parts[2] || '—';
-    const network = parts[3] || 'TBD';
-    const week = parts[4] || 'Unscheduled';
-    const phase = parts[5] || 'Regular Season';
-
-    if (isNaN(viewers) || !game) {
-      errors.push(`Line ${i + 1}: couldn't read viewers or game name — skipped`);
-      return;
-    }
-    newRows.push({
-      id: 'g_' + Date.now() + '_' + i,
-      viewers, game, datetime, network, week, phase
-    });
-  });
-
-  if (errors.length) {
-    errorsEl.style.display = 'block';
-    errorsEl.innerHTML = errors.join('<br>');
-  } else {
-    errorsEl.style.display = 'none';
-  }
-
-  if (newRows.length) {
-    DATA = DATA.concat(newRows);
-    lastAddedIds = new Set(newRows.map(r => r.id));
-    refreshFilterOptions();
-    render();
-    await saveData();
-    document.getElementById('bulkInput').value = '';
-  }
-});
-
-document.getElementById('clearBtn').addEventListener('click', async () => {
-  if (!confirm('Remove all games from this tracker? This cannot be undone.')) return;
-  DATA = [];
-  lastAddedIds = new Set();
-  refreshFilterOptions();
-  render();
-  await saveData();
-});
-
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.getElementById('themeIcon');
 const themeLabel = document.getElementById('themeLabel');
@@ -496,6 +401,7 @@ themeToggle.addEventListener('click', () => {
 });
 
 loadData();
+setInterval(loadData, REFRESH_INTERVAL_MS);
 </script>
 </body>
 </html>
