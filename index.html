@@ -195,7 +195,7 @@
 
   <footer class="page-foot">
     Source: Nielsen Big Data + Panel
-    <div class="footer-note">Ranked by average viewers per game across all appearances this season. Note: SEC Network, ACC Network and CBS Sports Network do not pay for Nielsen to measure viewership</div>
+    <div class="footer-note">Ranked by average viewers per game across all appearances this season. Includes only games on ABC, CBS, The CW, ESPN, ESPN2, ESPNU, FOX, FS1, NBC, TNT and USA. Note: SEC Network, ACC Network and CBS Sports Network do not pay for Nielsen to measure viewership</div>
   </footer>
 </div>
 
@@ -206,6 +206,12 @@ const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const AP_MONTHS = ['Jan.','Feb.','March','April','May','June','July','Aug.','Sept.','Oct.','Nov.','Dec.'];
 function formatAPDate(d) {
   return AP_MONTHS[d.getMonth()] + ' ' + d.getDate();
+}
+
+const ALLOWED_NETWORKS = ['ABC', 'CBS', 'THE CW', 'CW', 'ESPN', 'ESPN2', 'ESPNU', 'FOX', 'FS1', 'NBC', 'TNT', 'USA'];
+function isAllowedNetwork(n) {
+  const clean = n.trim().toUpperCase().replace(/^THE\s+/, '');
+  return ALLOWED_NETWORKS.some(a => a.replace(/^THE\s+/, '') === clean);
 }
 
 let TEAMS = [];
@@ -264,14 +270,17 @@ async function loadData() {
     const header = rows[0].map(h => h.trim().toLowerCase());
     const idx = {
       viewers: header.findIndex(h => h.includes('viewers')),
-      game: header.indexOf('game')
+      game: header.indexOf('game'),
+      network: header.indexOf('network')
     };
     const games = rows.slice(1)
       .filter(r => r[idx.game] && r[idx.game].trim())
       .map(r => ({
         game: (r[idx.game] || '').trim(),
-        viewers: parseFloat(r[idx.viewers]) || 0
-      }));
+        viewers: parseFloat(r[idx.viewers]) || 0,
+        network: (r[idx.network] || '').trim()
+      }))
+      .filter(g => g.network.split('/').some(n => isAllowedNetwork(n)));
     TEAMS = aggregateTeams(games);
 
     const statusText = document.getElementById('statusText');
